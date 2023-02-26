@@ -7,7 +7,9 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-TARGET_COL = "label"
+TARGET_COL = "severity"
+CATEGORY_TARGET_COL = f'{TARGET_COL}_code'
+CATEGORIES = ['warning', 'error', 'alert', 'critical', 'emergency']
 FEATURE_COL = "text_clean"
 ENCODE_SIZE = 64
 NUM_EPOCHS = 5
@@ -15,19 +17,16 @@ LEARNING_RATE = 2e-5
 
 # load df
 df = pd.read_json("labeled_data.json")
-df[[TARGET_COL]] = df[[TARGET_COL]].apply(
-    lambda col: pd.Categorical(col).codes)
+df[CATEGORY_TARGET_COL] = pd.Categorical(
+    df[TARGET_COL], categories=CATEGORIES).codes
 
 # split data train and data test
 trains = []
-for target in df[TARGET_COL].unique():
-    trains.append(df[df[TARGET_COL] == target].sample(
+for target in df[CATEGORY_TARGET_COL].unique():
+    trains.append(df[df[CATEGORY_TARGET_COL] == target].sample(
         frac=0.8, random_state=200))
 train = pd.concat(trains)
 test = df.drop(train.index)
-
-# store data test for eval
-test.to_json(f"test_{TARGET_COL}_df.json")
 
 # Define device to compute
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -53,7 +52,8 @@ for text in train[FEATURE_COL]:
 # put into gpu
 input_ids = torch.tensor(input_ids, dtype=torch.long).to("cuda")
 attention_masks = torch.tensor(attention_masks, dtype=torch.long).to("cuda")
-labels = torch.tensor(train[TARGET_COL].values, dtype=torch.long).to("cuda")
+labels = torch.tensor(
+    train[CATEGORY_TARGET_COL].values, dtype=torch.long).to("cuda")
 
 # create the data loader for training and validation
 train_dataset = TensorDataset(input_ids, attention_masks, labels)
@@ -63,7 +63,7 @@ train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True)
 model: AlbertModel = AlbertModel.from_pretrained("albert-base-v2")
 model.classifier = torch.nn.Linear(
     in_features=model.config.hidden_size, out_features=len(
-        set(train[TARGET_COL]))
+        set(train[CATEGORY_TARGET_COL]))
 )
 model.to("cuda")
 
@@ -127,9 +127,12 @@ for epoch in range(NUM_EPOCHS):
     test["predict"] = test[FEATURE_COL].apply(
         classify, model=model, tokenizer=tokenizer
     )
-    res = test.apply(lambda x: 1 if x[TARGET_COL]
+    res = test.apply(lambda x: 1 if x[CATEGORY_TARGET_COL]
                      == x["predict"] else 0, axis=1).sum()
     print(res, "/", len(test), res / len(test))
 
     # store model
     torch.save(model.state_dict(), f"{TARGET_COL}_model{epoch}.pt")
+
+# store data test for eval
+test.to_json(f"test_{TARGET_COL}_df.json")

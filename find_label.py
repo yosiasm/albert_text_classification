@@ -35,7 +35,8 @@ df_train = df[["title", "text_clean", "corpus", "group", "stack_group"]]
 df_train["topic"] = df_train.apply(
     lambda x: find_topic(x["text_clean"], x["group"]), axis=1
 )
-df_train["label"] = df_train.apply(lambda x: find_label(x["group"], x["topic"]), axis=1)
+df_train["severity"] = df_train.apply(
+    lambda x: find_label(x["group"], x["topic"]), axis=1)
 # [title, text_clean, corpus, group, topic, label]
 # Fast API getting...,  fast api getting...,    python. api. sqlalche...,	api,	3,	2
 

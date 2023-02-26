@@ -7,3 +7,5 @@ follow this steps:
 5. run find_label.py
 6. run train_severity_model.py
 7. run train_stack_group_model.py
+8. run api `uvicorn api:app --reload`
+9. open `http://localhost:8000/docs`

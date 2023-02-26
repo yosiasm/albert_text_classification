@@ -32,7 +32,8 @@ for tag in tags:
     for d in data:
         owner = {f"owner_{k}": d["owner"][k] for k in d["owner"]}
         docs.append(
-            {"group": tag, **{k: d[k] for k in d if k not in ["owner"]}, **owner}
+            {"group": tag, **{k: d[k]
+                              for k in d if k not in ["owner"]}, **owner}
         )
 df = pd.DataFrame(docs)
 
@@ -83,11 +84,13 @@ def preprocess(text):
 
 
 corpus = (
-    df["title"].str.lower().apply(preprocess).map(lambda x: re.sub("[;&,\.!?]", "", x))
+    df["title"].str.lower().apply(preprocess).map(
+        lambda x: re.sub("[;&,\.!?]", "", x))
 )
 df["text_clean"] = corpus
 
-corpus_detail = df["tags"].apply(lambda x: ". ".join(x) if type(x) == list else "")
+corpus_detail = df["tags"].apply(
+    lambda x: ". ".join(x) if type(x) == list else "")
 df["corpus_detail"] = corpus_detail
 
 corpus = corpus_detail + ". " + corpus
@@ -156,10 +159,10 @@ df_topic.to_csv("title_topic_label.csv", index=False)
 print("now label manually in title_topic_label.csv")
 print(
     {
-        1: "Warning: A condition might warrant attention",
-        2: "Error: Minor error, quick to fix",
-        3: "Critical: A critical error, some features may not working",
-        4: "Alert: Immidiate action may be required, unstable",
-        5: "Emergency: The system is stop running",
+        "warning": "A condition might warrant attention",
+        "error": "Minor error, quick to fix",
+        "critical": "A critical error, some features may not working",
+        "alert": "Immidiate action may be required, unstable",
+        "emergency": "The system is stop running",
     }
 )
